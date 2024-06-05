@@ -1,0 +1,36 @@
+import json
+import boto3
+
+s3 = boto3.client('s3')
+
+def lambda_handler(event, context):
+    try:
+        images = get_images_from_s3()
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Access-Control-Allow-Origin': '*',  # Allow requests from any origin
+                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+            },
+            'body': json.dumps({'images': images})
+        }
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'body': json.dumps({'message': 'Internal Server Error'})
+        }
+
+def get_images_from_s3():
+    bucket_name = 'sadawap'
+    folder_name = 'images'
+    images = []
+
+    try:
+        response = s3.list_objects_v2(Bucket=bucket_name, Prefix=f"{folder_name}/")
+        for obj in response.get('Contents', []):
+            images.append(f"https://{bucket_name}.s3.amazonaws.com/{obj['Key']}")
+        return images
+    except Exception as e:
+        print('Error fetching images from S3:', e)
+        raise e

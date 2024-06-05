@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Image Viewer</title>
+<style>
+  #image-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .image {
+    margin: 10px;
+    display: block;
+    max-width: 200px;
+    max-height: 200px;
+    cursor: pointer; /* Add cursor pointer for clickable effect */
+  }
+  .image-name {
+    text-align: center;
+  }
+  #next-button {
+    margin-top: 20px;
+    text-align: center;
+  }
+  /* Modal styles */
+  .modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    padding-top: 50px; /* Location of the box */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.9); /* Black w/ opacity */
+  }
+  .modal-content {
+    margin: auto;
+    display: block;
+    max-width: 80%;
+    max-height: 80%;
+    overflow-y: auto; /* Enable vertical scrollbar */
+  }
+  .modal-content img {
+    width: 100%;
+    height: auto;
+  }
+  .modal-close {
+    color: white;
+    position: absolute;
+    top: 15px;
+    right: 35px;
+    font-size: 40px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .modal-prev,
+  .modal-next {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    padding: 10px;
+    border: none;
+    cursor: pointer;
+  }
+  .modal-prev {
+    left: 10px;
+  }
+  .modal-next {
+    right: 10px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Image Viewer</h1>
+<div id="image-container"></div>
+<div id="next-button">
+  <button onclick="nextPage()">Next</button>
+</div>
+
+<!-- The Modal -->
+<div id="imageModal" class="modal">
+  <span class="modal-close" onclick="closeModal()">&times;</span>
+  <button class="modal-prev" onclick="prevImage()">&#10094;</button>
+  <button class="modal-next" onclick="nextImage()">&#10095;</button>
+  <div class="modal-content">
+    <img id="modalImage">
+  </div>
+</div>
+
+<script>
+  let currentPage = 1;
+  const imagesPerPage = 20;
+  let imagesData = [];
+  let currentImageIndex = 0;
+
+  function fetchImages() {
+    fetch('https://btjwg5avi2.execute-api.us-east-1.amazonaws.com/paginators3')
+      .then(response => response.json())
+      .then(data => {
+        imagesData = JSON.parse(data.body).images;
+        displayImages();
+      })
+      .catch(error => console.error('Error fetching images:', error));
+  }
+
+  function displayImages() {
+    const startIndex = (currentPage - 1) * imagesPerPage;
+    const endIndex = startIndex + imagesPerPage;
+    const imageContainer = document.getElementById('image-container');
+    imageContainer.innerHTML = ''; // Clear previous images
+
+    for (let i = startIndex; i < endIndex && i < imagesData.length; i++) {
+      const imageUrl = imagesData[i];
+      const imageName = imageUrl.substring(imageUrl.lastIndexOf('/') + 1);
+      const img = document.createElement('img');
+      img.src = imageUrl;
+      img.classList.add('image');
+      img.setAttribute('onclick', `openModal('${imageUrl}', ${i})`); // Add onclick event
+      const imageNameElement = document.createElement('p');
+      imageNameElement.textContent = imageName;
+      imageNameElement.classList.add('image-name');
+      const container = document.createElement('div');
+      container.appendChild(img);
+      container.appendChild(imageNameElement);
+      imageContainer.appendChild(container);
+    }
+  }
+
+  function nextPage() {
+    currentPage++;
+    displayImages();
+  }
+
+  // Modal functions
+  function openModal(imageUrl, index) {
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('modalImage');
+    modal.style.display = "block";
+    modalImg.src = imageUrl;
+    currentImageIndex = index;
+    event.stopPropagation();
+  }
+
+  function closeModal() {
+    const modal = document.getElementById('imageModal');
+    modal.style.display = "none";
+  }
+
+  function nextImage() {
+    currentImageIndex = (currentImageIndex + 1) % imagesData.length;
+    const imageUrl = imagesData[currentImageIndex];
+    const modalImg = document.getElementById('modalImage');
+    modalImg.src = imageUrl;
+  }
+
+  function prevImage() {
+    currentImageIndex = (currentImageIndex - 1 + imagesData.length) % imagesData.length;
+    const imageUrl = imagesData[currentImageIndex];
+    const modalImg = document.getElementById('modalImage');
+    modalImg.src = imageUrl;
+  }
+
+  // Initial fetch and display
+  fetchImages();
+</script>
+
+</body>
+</html>
